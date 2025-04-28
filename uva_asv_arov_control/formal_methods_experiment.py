@@ -114,6 +114,10 @@ class Forms_Experiment_Controller(Node):
                 time.sleep(0.05)
 
         # Send the control to test for 0.5 s and then stop and wait 1 s
+        mode_future = self.send_set_mode('depth_hold')
+        rclpy.spin_until_future_complete(self, mode_future)
+        mode_response = mode_future.result()
+
         self.get_logger().info('Sending controls')
         self.cmd_vel_pub.publish(control)
         time.sleep(0.5)
