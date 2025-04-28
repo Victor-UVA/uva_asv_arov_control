@@ -2,11 +2,13 @@
     "python.autoComplete.extraPaths": [
         "/home/malori/ros2_ws/install/bluerov/lib/python3.12/site-packages",
         "/home/malori/ros2_ws/install/bluerov_interfaces/lib/python3.12/site-packages",
+        "/home/maddy/ros2_ws/install/bluerov_interfaces/lib/python3.12/site-packages",
         "/opt/ros/jazzy/lib/python3.12/site-packages"
     ],
     "python.analysis.extraPaths": [
         "/home/malori/ros2_ws/install/bluerov/lib/python3.12/site-packages",
         "/home/malori/ros2_ws/install/bluerov_interfaces/lib/python3.12/site-packages",
+        "/home/maddy/ros2_ws/install/bluerov_interfaces/lib/python3.12/site-packages",
         "/opt/ros/jazzy/lib/python3.12/site-packages"
     ]
 }

@@ -9,6 +9,7 @@
         "/home/malori/ros2_ws/install/gscam2/include/**",
         "/home/malori/ros2_ws/install/ros2_shared/include/**",
         "/home/malori/ros2_ws/install/bluerov_interfaces/include/**",
+        "/home/maddy/ros2_ws/install/bluerov_interfaces/include/**",
         "/opt/ros/jazzy/include/**",
         "/home/malori/ros2_ws/src/gscam2/include/**",
         "/home/malori/ros2_ws/src/ros2_shared/include/**",
