@@ -100,27 +100,34 @@ class Forms_Experiment_Controller(Node):
 
             return_to_home = mode_response and pos_response and arm_response
 
-        timer = 0.0
-        while timer < 0.5:
-            rclpy.spin_once(self)
-            self.get_logger().info(f'Waiting at home: {timer:.2f}/0.50')
-            self.get_logger().info(f'{Rotation.from_quat(self.orientation).as_euler('xyz')[2] - self.home_yaw}')
-            if abs(np.linalg.norm(np.array(self.position) - np.array(self.home_position))) < 0.1 and\
-            abs(np.linalg.norm(Rotation.from_quat(self.orientation).as_euler('xyz')[2] - self.home_yaw)) < 0.01:
-                timer += 0.05
-                time.sleep(0.05)
-            else:
-                timer = 0.0
-                time.sleep(0.05)
+        time.sleep(1)
+
+        # timer = 0.0
+        # while timer < 0.5:
+        #     rclpy.spin_once(self)
+        #     self.get_logger().info(f'Waiting at home: {timer:.2f}/0.50')
+        #     self.get_logger().info(f'Rot Err: {Rotation.from_quat(self.orientation).as_euler('xyz')[2] - self.home_yaw}')
+        #     self.get_logger().info(f'Pos Err: {np.linalg.norm(np.array(self.position) - np.array(self.home_position))}')
+        #     self.get_logger().info(f'Pos: {self.position}, {self.home_position}')
+        #     if abs(np.linalg.norm(np.array(self.position[:1]) - np.array(self.home_position[:1]))) < 0.5 and\
+        #     abs(np.linalg.norm(Rotation.from_quat(self.orientation).as_euler('xyz')[2] - self.home_yaw)) < 0.1:
+        #         timer += 0.1
+        #         time.sleep(0.1)
+        #     else:
+        #         timer = 0.0
+        #         time.sleep(0.1)
 
         # Send the control to test for 0.5 s and then stop and wait 1 s
-        mode_future = self.send_set_mode('depth_hold')
+        mode_future = self.send_set_mode('alt_hold')
         rclpy.spin_until_future_complete(self, mode_future)
         mode_response = mode_future.result()
 
         self.get_logger().info('Sending controls')
-        self.cmd_vel_pub.publish(control)
-        time.sleep(0.5)
+        timer = 0
+        while timer < 2:
+            self.cmd_vel_pub.publish(control)
+            time.sleep(0.1)
+            timer += 0.1
         
         stop_command = Twist()
         stop_command.linear.x, stop_command.linear.y, stop_command.linear.z  = 0.0, 0.0, 0.0
@@ -140,9 +147,9 @@ class Forms_Experiment_Controller(Node):
         for x in control_x:
             for y in control_y:
                 for yaw in control_yaw:
-                    control.linear.x = 0.1 * x
-                    control.linear.y = 0.1 * y
-                    control.angular.z = 0.075 * yaw
+                    control.linear.x = 0.2 * x
+                    control.linear.y = 0.2 * y
+                    control.angular.z = 0.2 * yaw
                     
                     for i in range(2):
                         self.get_logger().info(f'Running trial {i} with controls X: {x}, Y: {y}, Yaw: {yaw}')
@@ -155,8 +162,11 @@ def main():
     forms_experiment_contoller = Forms_Experiment_Controller()
 
     rclpy.spin_once(forms_experiment_contoller)
-    forms_experiment_contoller.home_position = forms_experiment_contoller.position
-    forms_experiment_contoller.home_yaw = Rotation.from_quat(forms_experiment_contoller.orientation).as_euler('xyz')[2]
+    if forms_experiment_contoller.home_position == [0.0, 0.0, 0.0]:
+        forms_experiment_contoller.home_position[0] = forms_experiment_contoller.position[0]
+        forms_experiment_contoller.home_position[1] = forms_experiment_contoller.position[1]
+        forms_experiment_contoller.home_position[2] = forms_experiment_contoller.position[2]
+        forms_experiment_contoller.home_yaw = Rotation.from_quat(forms_experiment_contoller.orientation).as_euler('xyz')[2]
 
     forms_experiment_contoller.run_experiment()
 
