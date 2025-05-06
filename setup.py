@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'formal_methods_experiment = uva_asv_arov_control.formal_methods_experiment:main'
+            'formal_methods_experiment = uva_asv_arov_control.formal_methods_experiment:main',
+            'vu_z_control = uva_asv_arov_control.vu_zcontrollerSimple:main'
         ],
     },
 )
