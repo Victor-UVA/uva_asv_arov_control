@@ -8,18 +8,19 @@ from asv_arov_interfaces.srv import PositionTargetLocalNED, SetMAVMode, SetArmDi
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
+VEHICLE = 'asv'
 
 class Forms_Experiment_Controller(Node):
     def __init__(self):
         super().__init__('forms_expriment_controller')
-        self.pos_cli = self.create_client(PositionTargetLocalNED, 'set_position_target_local_ned')
-        self.mode_cli = self.create_client(SetMAVMode, 'set_mav_mode')
-        self.arm_cli = self.create_client(SetArmDisarm, 'set_arm_disarm')
+        self.pos_cli = self.create_client(PositionTargetLocalNED, 'asv/set_position_target_local_ned')
+        self.mode_cli = self.create_client(SetMAVMode, f'{VEHICLE}/set_mav_mode')
+        self.arm_cli = self.create_client(SetArmDisarm, f'{VEHICLE}/set_arm_disarm')
         while not self.pos_cli.wait_for_service(timeout_sec=1.0) and not self.mode_cli.wait_for_service(timeout_sec=1.0)\
               and not self.arm_cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('BlueROV services not available, waiting again...')
 
-        self.cmd_vel_pub = self.create_publisher(Twist, '/cmd_vel', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, f'{VEHICLE}/cmd_vel', 10)
 
         self.position = [0.0, 0.0, 0.0]
         self.orientation = [0.0, 0.0, 0.0, 0.0]
@@ -27,7 +28,7 @@ class Forms_Experiment_Controller(Node):
         self.home_position = [0.0, 0.0, 0.0]
         self.home_yaw = 0.0
 
-        self.odom_sub = self.create_subscription(Odometry, 'bluerov/pose_from_dvl', self.odom_callback, 10)
+        self.odom_sub = self.create_subscription(Odometry, '/arov/odom', self.odom_callback, 10)
         self.odom_sub
 
     def send_position_target_local_ned(self):
@@ -35,7 +36,7 @@ class Forms_Experiment_Controller(Node):
 
         request.x = float(self.home_position[0])
         request.y = float(self.home_position[1])
-        request.z = float(self.home_position[2])
+        request.z = 0.0#float(self.home_position[2])
 
         request.vx = 0.0
         request.vy = 0.0
@@ -48,7 +49,7 @@ class Forms_Experiment_Controller(Node):
         request.yaw = float(self.home_yaw)
         request.yaw_rate = 0.0
 
-        request.bit_mask = '1111100111000000'
+        request.bit_mask = '1111100111100100'
 
         return self.pos_cli.call_async(request)
     
@@ -83,26 +84,30 @@ class Forms_Experiment_Controller(Node):
             control (Twist): The control to send to the vehicle in m/s and rad/s
         '''
 
+        arm_future = self.send_arm_disarm(True)
+        rclpy.spin_until_future_complete(self, arm_future)
+        arm_response = arm_future.result()
+
         # Send command to return to home position and wait there for 0.5 s to settle
-        return_to_home = False
-        while not return_to_home:
-            self.get_logger().info('Sending home command')
+        # return_to_home = False
+        # while not return_to_home:
+        #     self.get_logger().info('Sending home command')
 
-            arm_future = self.send_arm_disarm(True)
-            rclpy.spin_until_future_complete(self, arm_future)
-            arm_response = arm_future.result()
+        #     arm_future = self.send_arm_disarm(True)
+        #     rclpy.spin_until_future_complete(self, arm_future)
+        #     arm_response = arm_future.result()
 
-            pos_future = self.send_position_target_local_ned()
-            rclpy.spin_until_future_complete(self, pos_future)
-            pos_response = pos_future.result()
+            # pos_future = self.send_position_target_local_ned()
+            # rclpy.spin_until_future_complete(self, pos_future)
+            # pos_response = pos_future.result()
 
-            mode_future = self.send_set_mode('guided')
-            rclpy.spin_until_future_complete(self, mode_future)
-            mode_response = mode_future.result()
+            # mode_future = self.send_set_mode('guided')
+            # rclpy.spin_until_future_complete(self, mode_future)
+            # mode_response = mode_future.result()
 
-            return_to_home = mode_response and pos_response and arm_response
+            # return_to_home = mode_response and pos_response and arm_response
 
-        time.sleep(3)
+        # time.sleep(3)
 
         # timer = 0.0
         # while timer < 0.5:
@@ -120,7 +125,7 @@ class Forms_Experiment_Controller(Node):
         #         time.sleep(0.1)
 
         # Send the control to test for 0.5 s and then stop and wait 1 s
-        mode_future = self.send_set_mode('alt_hold')
+        mode_future = self.send_set_mode('manual')
         rclpy.spin_until_future_complete(self, mode_future)
         mode_response = mode_future.result()
 
@@ -140,8 +145,8 @@ class Forms_Experiment_Controller(Node):
         time.sleep(1)
 
     def run_experiment(self):
-        control_x = [-1, 0, 1]
-        control_y = [0, 1]
+        control_x = [1]
+        control_y = [0]
         control_yaw = [0, 1]
 
         control = Twist()
@@ -149,9 +154,9 @@ class Forms_Experiment_Controller(Node):
         for x in control_x:
             for y in control_y:
                 for yaw in control_yaw:
-                    control.linear.x = 0.2 * x
-                    control.linear.y = 0.2 * y
-                    control.angular.z = 0.2 * yaw
+                    control.linear.x = 0.01 * x
+                    control.linear.y = 0.0 * y
+                    control.angular.z = 0.01 * yaw
                     
                     for i in range(2):
                         self.get_logger().info(f'Running trial {i} with controls X: {x}, Y: {y}, Yaw: {yaw}')
