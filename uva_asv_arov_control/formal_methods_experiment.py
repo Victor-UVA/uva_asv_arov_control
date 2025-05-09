@@ -4,7 +4,7 @@ from scipy.spatial.transform import Rotation
 import numpy as np
 import time
 
-from bluerov_interfaces.srv import PositionTargetLocalNED, SetMAVMode, SetArmDisarm
+from asv_arov_interfaces.srv import PositionTargetLocalNED, SetMAVMode, SetArmDisarm
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
@@ -47,6 +47,8 @@ class Forms_Experiment_Controller(Node):
 
         request.yaw = float(self.home_yaw)
         request.yaw_rate = 0.0
+
+        request.bit_mask = '1111100111000000'
 
         return self.pos_cli.call_async(request)
     
@@ -100,7 +102,7 @@ class Forms_Experiment_Controller(Node):
 
             return_to_home = mode_response and pos_response and arm_response
 
-        time.sleep(1)
+        time.sleep(3)
 
         # timer = 0.0
         # while timer < 0.5:
