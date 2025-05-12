@@ -8,19 +8,20 @@ from asv_arov_interfaces.srv import PositionTargetLocalNED, SetMAVMode, SetArmDi
 from geometry_msgs.msg import Twist
 from nav_msgs.msg import Odometry
 
-VEHICLE = 'asv'
-
 class Forms_Experiment_Controller(Node):
     def __init__(self):
         super().__init__('forms_expriment_controller')
+        self.declare_parameter('vehicle', 'arov')
+        self.vehicle = self.get_parameter('vehicle').value
+
         self.pos_cli = self.create_client(PositionTargetLocalNED, 'asv/set_position_target_local_ned')
-        self.mode_cli = self.create_client(SetMAVMode, f'{VEHICLE}/set_mav_mode')
-        self.arm_cli = self.create_client(SetArmDisarm, f'{VEHICLE}/set_arm_disarm')
+        self.mode_cli = self.create_client(SetMAVMode, f'{self.vehicle}/set_mav_mode')
+        self.arm_cli = self.create_client(SetArmDisarm, f'{self.vehicle}/set_arm_disarm')
         while not self.pos_cli.wait_for_service(timeout_sec=1.0) and not self.mode_cli.wait_for_service(timeout_sec=1.0)\
               and not self.arm_cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('BlueROV services not available, waiting again...')
 
-        self.cmd_vel_pub = self.create_publisher(Twist, f'{VEHICLE}/cmd_vel', 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, f'{self.vehicle}/cmd_vel', 10)
 
         self.position = [0.0, 0.0, 0.0]
         self.orientation = [0.0, 0.0, 0.0, 0.0]
@@ -145,18 +146,20 @@ class Forms_Experiment_Controller(Node):
         time.sleep(1)
 
     def run_experiment(self):
-        control_x = [1]
+        control_x = [-1, 0, 1]
         control_y = [0]
         control_yaw = [0, 1]
 
         control = Twist()
 
+        gain = 0.15 # if self.vehicle == 'arov' else 0.1
+
         for x in control_x:
             for y in control_y:
                 for yaw in control_yaw:
-                    control.linear.x = 0.01 * x
-                    control.linear.y = 0.0 * y
-                    control.angular.z = 0.01 * yaw
+                    control.linear.x = gain * x
+                    control.linear.y = gain * y
+                    control.angular.z = gain * yaw
                     
                     for i in range(2):
                         self.get_logger().info(f'Running trial {i} with controls X: {x}, Y: {y}, Yaw: {yaw}')
